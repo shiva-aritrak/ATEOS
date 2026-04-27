@@ -243,6 +243,7 @@ static int usage(const char *progname) {
     dbg_time("-f logfilename                         Save log message of this program to file");
     dbg_time("-u usbmonlog filename                  Save usbmon log to file");
     dbg_time("-i interface                           Specify which network interface to setup data call when multi-modems exits");
+    dbg_time("-q qmichannel                          Specify modem control channel, e.g. /dev/ttyUSB2 or /dev/cdc-wdm0");
     dbg_time("-4                                     Setup IPv4 data call (default)");
     dbg_time("-6                                     Setup IPv6 data call");
     dbg_time("-n pdn                                 Specify which pdn to setup data call (default 1 for QMI, 0 for MBIM)");
@@ -688,6 +689,8 @@ static int quectel_CM(PROFILE_T *profile)
 
     if (profile->expect_adapter[0])
         strncpy(usbnet_adapter, profile->expect_adapter, sizeof(usbnet_adapter));
+    if (profile->expect_qmichannel[0])
+        strncpy(qmichannel, profile->expect_qmichannel, sizeof(qmichannel));
     
     if (qmidevice_detect(qmichannel, usbnet_adapter, sizeof(qmichannel), profile)) {
     	profile->hardware_interface = HARDWARE_USB;
@@ -859,6 +862,12 @@ static int parse_user_input(int argc, char **argv, PROFILE_T *profile) {
             case 'i':
                 if (has_more_argv()) {
                     strncpy(profile->expect_adapter, argv[opt++], sizeof(profile->expect_adapter) - 1);
+                }
+            break;
+
+            case 'q':
+                if (has_more_argv()) {
+                    strncpy(profile->expect_qmichannel, argv[opt++], sizeof(profile->expect_qmichannel) - 1);
                 }
             break;
 

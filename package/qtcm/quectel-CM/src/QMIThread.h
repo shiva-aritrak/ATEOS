@@ -205,6 +205,7 @@ typedef struct __PROFILE {
     const char *logfile;
     const char *usblogfile;
     char expect_adapter[32];
+    char expect_qmichannel[32];
     int kill_pdp;
     int replication_factor;
     //user input end

@@ -34,6 +34,11 @@ ramips_setup_interfaces()
 		ucidef_add_switch "switch0" \
 			"0:lan" "1:lan" "2:lan" "3:lan" "4:wan" "6@eth0"
 		;;
+    aritrak,at-we826-e)
+	ucidef_add_switch "switch0" \
+		"0:lan" "1:lan" "2:lan" "3:lan" "4:wan" "6@eth0"
+	;;
+
 	alfa-network,r36m-e4g|\
 	bolt,bl100|\
 	zbtlink,zbt-we1026-h-32m)

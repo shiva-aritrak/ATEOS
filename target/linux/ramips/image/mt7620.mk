@@ -4,7 +4,6 @@
 
 include ./common-sercomm.mk
 include ./common-tp-link.mk
-
 DEVICE_VARS += DLINK_ROM_ID DLINK_FAMILY_MEMBER DLINK_FIRMWARE_SIZE DLINK_IMAGE_OFFSET
 
 define Build/elecom-header
@@ -1584,6 +1583,16 @@ define Device/zbtlink_zbt-we826-e
 	kmod-usb-serial-option
 endef
 TARGET_DEVICES += zbtlink_zbt-we826-e
+
+define Device/aritrak_at-we826-e
+  SOC := mt7620a
+  IMAGE_SIZE := 32448k
+  DEVICE_VENDOR := Aritrak
+  DEVICE_MODEL := AT-WE826-E
+  DEVICE_PACKAGES := kmod-usb2 kmod-usb-ohci kmod-mmc-mtk\
+	kmod-usb-serial-option
+endef
+TARGET_DEVICES += aritrak_at-we826-e
 
 define Device/zbtlink_zbt-wr8305rt
   SOC := mt7620n

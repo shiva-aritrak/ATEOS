@@ -1589,7 +1589,7 @@ define Device/aritrak_at-we826-e
   IMAGE_SIZE := 32448k
   DEVICE_VENDOR := Aritrak
   DEVICE_MODEL := AT-WE826-E
-  DEVICE_PACKAGES := kmod-usb2 kmod-usb-ohci kmod-mmc-mtk\
+  DEVICE_PACKAGES := kmod-usb2 kmod-usb-ohci kmod-mmc-mtk uqmi\
 	kmod-usb-serial-option
 endef
 TARGET_DEVICES += aritrak_at-we826-e

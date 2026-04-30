@@ -72,14 +72,6 @@ append_profile_args() {
 	fi
 }
 
-load_usb_modem_drivers() {
-	modprobe usbserial 2>/dev/null
-	modprobe usb_wwan 2>/dev/null
-	modprobe option 2>/dev/null
-	modprobe cdc_ether 2>/dev/null
-	modprobe cdc_ncm 2>/dev/null
-}
-
 boot_prepare() {
 	rmmod usbserial 2>/dev/null
 	rmmod ch341 2>/dev/null
@@ -99,7 +91,6 @@ start_service() {
 	boot_prepare
 	sleep 30
 	echo "Module loading >>>>>>>>"
-	load_usb_modem_drivers
 	sleep 5
 	echo "############## Start LTE ############"
 
@@ -109,8 +100,6 @@ start_service() {
 	[ "$bridge_mode" = "1" ] && procd_append_param command -b
 	append_arg "$pincode" -p
 	append_arg "$proxy_mode" -p
-	append_arg "$network_interface" -i
-	append_arg "$at_port" -q
 	[ "$pdp" != "1" ] && append_arg "$pdp" -n
 	[ -n "$mux_id" ] && append_arg "$mux_id" -m
 	[ "$ip_type" = "ipv4v6" ] && procd_append_param command -4 -6
@@ -121,7 +110,6 @@ start_service() {
 	[ "$log_enabled" = "1" ] && append_arg "$log_file" -f
 	append_arg "$usbmon_log_file" -u
 
-	procd_set_param respawn
 	procd_close_instance
 
 	echo "####################################"

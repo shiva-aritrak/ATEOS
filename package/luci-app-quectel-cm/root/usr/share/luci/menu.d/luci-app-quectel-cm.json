@@ -1,12 +1,12 @@
 {
-	"admin/services/qtcm_modem": {
+	"admin/status/qtcm_modem": {
 		"title": "QTCM-Modem",
 		"order": 70,
 		"action": {
 			"type": "firstchild"
 		}
 	},
-	"admin/services/qtcm_modem/status": {
+	"admin/status/qtcm_modem/status": {
 		"title": "Status",
 		"order": 10,
 		"action": {
@@ -14,7 +14,7 @@
 			"path": "quectel_cm/status"
 		}
 	},
-	"admin/services/qtcm_modem/config": {
+	"admin/status/qtcm_modem/config": {
 		"title": "Configuration",
 		"order": 20,
 		"action": {

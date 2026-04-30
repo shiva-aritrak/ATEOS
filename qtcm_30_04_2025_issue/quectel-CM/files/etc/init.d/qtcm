@@ -1,0 +1,206 @@
+#!/bin/sh /etc/rc.common
+
+[ -f /lib/functions.sh ] || {
+	echo "qtcm: OpenWrt runtime not detected; /lib/functions.sh is missing." >&2
+	echo "Install this script on an OpenWrt target or run it via the OpenWrt init system." >&2
+	exit 1
+}
+
+START=99
+USE_PROCD=1
+
+. /lib/functions.sh
+
+CONF="qtcm"
+SECTION="main"
+EXTRA_COMMANDS="killpdn"
+EXTRA_HELP="    killpdn [pdp]    Disconnect a specific PDN using quectel-CM"
+
+append_arg() {
+	local value="$1"
+	local flag="$2"
+
+	[ -n "$value" ] && procd_append_param command "$flag" "$value"
+}
+
+load_settings() {
+	config_load "$CONF"
+
+	config_get enabled "$SECTION" enabled "1"
+	config_get log_enabled "$SECTION" log "1"
+	config_get log_file "$SECTION" log_file "/tmp/q-cm.log"
+	config_get usbmon_log_file "$SECTION" usbmon_log_file ""
+	config_get cell_internet_mode "$SECTION" cell_internet_mode "nat"
+	config_get network_interface "$SECTION" network_interface ""
+	config_get at_port "$SECTION" at_port ""
+	config_get at_cmd "$SECTION" at_cmd ""
+	config_get pincode "$SECTION" pincode ""
+	config_get proxy_mode "$SECTION" proxy_mode ""
+	config_get pdp "$SECTION" pdp "1"
+	config_get load_qmi_wwan_q "$SECTION" load_qmi_wwan_q "0"
+	config_get qmap_mode "$SECTION" qmap_mode "1"
+	config_get mux_id "$SECTION" mux_id ""
+	config_get ip_type "$SECTION" ip_type "ipv4"
+	config_get verbose "$SECTION" verbose "0"
+	config_get no_dhcp "$SECTION" no_dhcp "0"
+	config_get auto_apn "$SECTION" auto_apn "1"
+	config_get apn "$SECTION" apn ""
+	config_get username "$SECTION" username ""
+	config_get password "$SECTION" password ""
+	config_get auth "$SECTION" auth "none"
+
+	bridge_mode="0"
+	[ "$cell_internet_mode" = "ippt" ] && bridge_mode="1"
+	[ "$auto_apn" = "1" ] && apn=""
+	[ -z "$at_port" ] && at_port="$at_cmd"
+}
+
+append_profile_args() {
+	[ "$auto_apn" = "1" ] && return 0
+	[ -z "$apn" ] && return 0
+
+	procd_append_param command -s "$apn"
+
+	# quectel-CM parses user/password/auth positionally after -s.
+	# Only append trailing credentials when both user and password exist,
+	# otherwise later values would shift into the wrong argument slot.
+	if [ -n "$username" ] && [ -n "$password" ]; then
+		procd_append_param command "$username" "$password"
+
+		case "$auth" in
+			pap) procd_append_param command 1 ;;
+			chap) procd_append_param command 2 ;;
+			mschapv2) procd_append_param command 3 ;;
+			none) procd_append_param command 0 ;;
+		esac
+	fi
+}
+
+load_usb_modem_drivers() {
+	[ "$load_qmi_wwan_q" = "1" ] && modprobe qmi_wwan_q qmap_mode="$qmap_mode" 2>/dev/null
+	modprobe usbserial 2>/dev/null
+	modprobe usb_wwan 2>/dev/null
+	modprobe option 2>/dev/null
+	modprobe cdc_ether 2>/dev/null
+	modprobe cdc_ncm 2>/dev/null
+}
+
+wait_for_modem_device() {
+	local ifname="$network_interface"
+	local i=0
+
+	while [ "$i" -lt 60 ]; do
+		[ -n "$ifname" ] && [ -d "/sys/class/net/$ifname" ] && return 0
+		[ -d /sys/class/net/usb0 ] && return 0
+		[ -d /sys/class/net/wwan0 ] && return 0
+		[ -e /dev/cdc-wdm0 ] && return 0
+		[ -e /dev/ttyUSB0 ] && return 0
+		i=$((i + 1))
+		sleep 1
+	done
+
+	return 0
+}
+
+populate_detected_settings_from_log() {
+	local changed=0
+	local configured_at
+	local configured_at_cmd
+	local configured_if
+	local detected_at
+	local detected_if
+	local i=0
+
+	while [ "$i" -lt 30 ]; do
+		if [ -f "$log_file" ]; then
+			detected_at="$(sed -n 's/.*Auto find qmichannel = \(.*\)$/\1/p' "$log_file" | tail -n 1)"
+			detected_if="$(sed -n 's/.*Auto find usbnet_adapter = \(.*\)$/\1/p' "$log_file" | tail -n 1)"
+			if [ -n "$detected_at" ] || [ -n "$detected_if" ]; then
+				break
+			fi
+		fi
+
+		i=$((i + 1))
+		sleep 1
+	done
+
+	configured_if="$(uci -q get "$CONF.$SECTION.network_interface")"
+	configured_at="$(uci -q get "$CONF.$SECTION.at_port")"
+	configured_at_cmd="$(uci -q get "$CONF.$SECTION.at_cmd")"
+
+	if [ -n "$detected_if" ] && { [ -z "$configured_if" ] || [ ! -d "/sys/class/net/$configured_if" ]; }; then
+		uci set "$CONF.$SECTION.network_interface=$detected_if"
+		changed=1
+	fi
+
+	case "$detected_at" in
+		/dev/ttyUSB*|/dev/ttyACM*|/dev/stty_*)
+			;;
+		*)
+			detected_at=""
+			;;
+	esac
+
+	if [ -n "$detected_at" ]; then
+		if [ -z "$configured_at" ] || [ "$configured_at" = "/dev/ttyUSB0" ]; then
+			uci set "$CONF.$SECTION.at_port=$detected_at"
+			changed=1
+		fi
+
+		if [ -z "$configured_at_cmd" ] || [ "$configured_at_cmd" = "/dev/ttyUSB0" ]; then
+			uci set "$CONF.$SECTION.at_cmd=$detected_at"
+			changed=1
+		fi
+	fi
+
+	[ "$changed" = "1" ] && uci commit "$CONF"
+}
+
+start_service() {
+	load_settings
+	[ "$enabled" = "0" ] && return 0
+
+	echo "start wait 30sec >>>>>>>>"
+	sleep 30
+	echo "Module loading >>>>>>>>"
+	load_usb_modem_drivers
+	wait_for_modem_device
+	echo "############## Start LTE ############"
+
+	procd_open_instance
+	procd_set_param command /sbin/quectel-CM
+	procd_set_param stdout 1
+	procd_set_param stderr 1
+
+	[ "$bridge_mode" = "1" ] && procd_append_param command -b
+	append_arg "$pincode" -p
+	append_arg "$proxy_mode" -p
+	[ "$pdp" != "1" ] && append_arg "$pdp" -n
+	[ -n "$mux_id" ] && append_arg "$mux_id" -m
+	[ "$ip_type" = "ipv4v6" ] && procd_append_param command -4 -6
+	[ "$ip_type" = "ipv6" ] && procd_append_param command -6
+	append_profile_args
+	[ "$verbose" = "1" ] && procd_append_param command -v
+	[ "$no_dhcp" = "1" ] && procd_append_param command -d
+	[ "$log_enabled" = "1" ] && append_arg "$log_file" -f
+	append_arg "$usbmon_log_file" -u
+
+	procd_close_instance
+	populate_detected_settings_from_log &
+
+	echo "####################################"
+}
+
+stop_service() {
+	service_stop /sbin/quectel-CM
+}
+
+killpdn() {
+	local pdp="${1:-1}"
+
+	/sbin/quectel-CM -k "$pdp"
+}
+
+service_triggers() {
+	procd_add_reload_trigger "$CONF"
+}

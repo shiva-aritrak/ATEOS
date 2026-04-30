@@ -373,17 +373,10 @@ BOOL qmidevice_detect(char *qmichannel, char *usbnet_adapter, unsigned bufsize, 
         }
         
         if (netcard[0] && devname[0]) {
-            char detected_qmichannel[37] = {'\0'};
-
             if (devname[0] == '/')
-                snprintf(detected_qmichannel, sizeof(detected_qmichannel), "%s", devname);
+                snprintf(qmichannel, bufsize, "%s", devname);
             else
-                snprintf(detected_qmichannel, sizeof(detected_qmichannel), "/dev/%s", devname);
-
-            if (qmichannel[0] && strcmp(qmichannel, detected_qmichannel))
-                continue;
-
-            snprintf(qmichannel, bufsize, "%s", detected_qmichannel);
+                snprintf(qmichannel, bufsize, "/dev/%s", devname);
             snprintf(usbnet_adapter, bufsize, "%s", netcard);
             dbg_time("Auto find qmichannel = %s", qmichannel);
             dbg_time("Auto find usbnet_adapter = %s", usbnet_adapter);

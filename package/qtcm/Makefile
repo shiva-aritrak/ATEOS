@@ -12,11 +12,8 @@ PKG_LICENSE:=GNU GENERAL PUBLIC LICENSE
 define Package/qtcm
 	CATEGORY:=openwrt package
 	SUBMENU:=Utils
-	# Select package by default
-	DEFAULT:=y
 	TITLE:=Quectel QTCM application
 	URL:=https://www.openwrt.com
-	DEPENDS:=+kmod-usb-serial +kmod-usb-serial-option +kmod-usb-net +kmod-usb-net-cdc-ether +kmod-usb-net-cdc-ncm
 endef
 
 define Package/qtcm/description
@@ -27,7 +24,6 @@ define KernelPackage/qtcm-kernel
   SUBMENU:=USB Support
   TITLE:=Quectel QMI WWAN driver 
   FILES:=$(PKG_BUILD_DIR)/qmi-wwan-q/src/qmi_wwan_q.ko
-  AUTOLOAD:=$(call AutoLoad,50,qmi_wwan_q)
   DEPENDS:=@USB_SUPPORT +kmod-usb-core +kmod-usb-net +kmod-usb-wdm
 endef
 

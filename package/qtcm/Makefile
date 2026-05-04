@@ -12,6 +12,7 @@ PKG_LICENSE:=GNU GENERAL PUBLIC LICENSE
 define Package/qtcm
 	CATEGORY:=openwrt package
 	SUBMENU:=Utils
+	DEPENDS:=+kmod-usb-serial +kmod-usb-serial-option +kmod-usb-serial-wwan +kmod-usb-net-cdc-ether
 	TITLE:=Quectel QTCM application
 	URL:=https://www.openwrt.com
 endef

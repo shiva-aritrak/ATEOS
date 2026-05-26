@@ -1,7 +1,9 @@
 #!/bin/sh /etc/rc.common
 
-[ -f /lib/functions.sh ] || {
-	echo "qtcm: OpenWrt runtime not detected; /lib/functions.sh is missing." >&2
+: "${IPKG_INSTROOT:=}"
+
+[ -f "$IPKG_INSTROOT/lib/functions.sh" ] || {
+	echo "qtcm: OpenWrt runtime not detected; $IPKG_INSTROOT/lib/functions.sh is missing." >&2
 	echo "Install this script on an OpenWrt target or run it via the OpenWrt init system." >&2
 	exit 1
 }
@@ -9,7 +11,7 @@
 START=99
 USE_PROCD=1
 
-. /lib/functions.sh
+. "$IPKG_INSTROOT/lib/functions.sh"
 
 CONF="qtcm"
 SECTION="main"

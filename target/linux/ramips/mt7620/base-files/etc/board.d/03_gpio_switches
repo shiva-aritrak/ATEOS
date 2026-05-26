@@ -29,7 +29,7 @@ lb-link,bl-w1200)
 	ucidef_add_gpio_switch "eth_leds_enable" "ETH LEDs enable" "522" "1"
 	;;
 zbtlink,zbt-we826-e)
-	ucidef_add_gpio_switch "sim_switch" "SIM slot switch" "525"
+	ucidef_add_gpio_switch "sim_switch" "SIM slot switch" "525" "1"
 	ucidef_add_gpio_switch "power_mpcie" "mPCIe power" "526" "1"
 	;;
 esac

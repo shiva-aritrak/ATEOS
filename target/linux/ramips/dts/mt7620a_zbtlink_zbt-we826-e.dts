@@ -23,7 +23,7 @@
 
 		sim {
 			label = "red:sim";
-			gpios = <&gpio0 12 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
 		};
 
 		air {

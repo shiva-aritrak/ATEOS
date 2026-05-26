@@ -1,0 +1,10 @@
+#!/bin/sh
+
+uci set network.cellular='interface'
+uci set network.cellular.device='usb0'
+uci set network.cellular.proto='dhcp'
+uci commit network
+uci add_list firewall.@zone[1].network='cellular'
+uci commit firewall
+
+exit 0

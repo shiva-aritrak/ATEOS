@@ -1,0 +1,68 @@
+#!/bin/sh
+[ -z "$1" ] && echo "Error: should be run by udhcpc" && exit 1
+
+get_metric() {
+	case "$interface" in
+		eth0.2) echo 10 ;;   # WAN
+		eth0.3) echo 20 ;;   # WAN2 if used
+		usb0)   echo 50 ;;   # Cellular
+		*)      echo 100 ;;
+	esac
+}
+
+set_classless_routes() {
+	local max=128
+	local type
+
+	while [ -n "$1" ] && [ -n "$2" ] && [ $max -gt 0 ]; do
+		[ "${1##*/}" -eq 32 ] && type=host || type=net
+		echo "udhcpc: adding route for $type $1 via $2"
+		route add -$type "$1" gw "$2" dev "$interface"
+		max=$((max - 1))
+		shift 2
+	done
+}
+
+setup_interface() {
+	local METRIC
+	METRIC="$(get_metric)"
+
+	echo "udhcpc: flushing old IPv4 address on $interface"
+	ip -4 addr flush dev "$interface"
+
+	echo "udhcpc: ip addr add $ip/${subnet:-255.255.255.0} broadcast ${broadcast:-+} dev $interface"
+	ip addr add "$ip/${subnet:-255.255.255.0}" broadcast "${broadcast:-+}" dev "$interface"
+
+	if [ -n "$router" ] && [ "$router" != "0.0.0.0" ] && [ "$router" != "255.255.255.255" ]; then
+		echo "udhcpc: setting default routers on $interface metric $METRIC: $router"
+
+		for i in $router; do
+			route del default gw "$i" dev "$interface" 2>/dev/null
+			route add default gw "$i" dev "$interface" metric "$METRIC"
+		done
+	fi
+
+	# CIDR STATIC ROUTES RFC3442
+	[ -n "$staticroutes" ] && set_classless_routes $staticroutes
+	[ -n "$msstaticroutes" ] && set_classless_routes $msstaticroutes
+}
+
+case "$1" in
+	deconfig)
+		echo "udhcpc: deconfig $interface"
+		ip -4 addr flush dev "$interface"
+		;;
+	renew)
+		echo "udhcpc: renew $interface"
+		setup_interface update
+		;;
+	bound)
+		echo "udhcpc: bound $interface"
+		setup_interface ifup
+		;;
+esac
+
+# user rules
+[ -f /etc/udhcpc.user ] && . /etc/udhcpc.user
+
+exit 0

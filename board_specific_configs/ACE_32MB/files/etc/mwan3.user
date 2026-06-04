@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# This file is interpreted as shell script.
+# Put your custom mwan3 action here, they will
+# be executed with each netifd hotplug interface event
+# on interfaces for which mwan3 is enabled.
+#
+# There are three main environment variables that are passed to this script.
+#
+# $ACTION
+#      <ifup>         Is called by netifd and mwan3track.
+#      <ifdown>       Is called by netifd and mwan3track.
+#      <connected>    Is only called by mwan3track if tracking was successful.
+#      <disconnected> Is only called by mwan3track if tracking has failed.
+# $INTERFACE    Name of the interface an action relates to (e.g. "wan" or "wwan").
+# $DEVICE       Physical device name of the interface the action relates to (e.g. "eth0" or "ww
+#               Note: On an ifdown event, $DEVICE is not available, use $INTERFACE instead.
+#
+# Further documentation can be found here:
+# https://openwrt.org/docs/guide-user/network/wan/multiwan/mwan3#alertsnotifications
+
+LOGTAG="mwan3-user"
+
+logger -t "$LOGTAG" "MWAN3 event ACTION=$ACTION INTERFACE=$INTERFACE DEVICE=$DEVICE"
+
+case "$ACTION" in
+    disconnected|offline)
+        logger -t "$LOGTAG" "Interface $INTERFACE is offline, cleaning conntrack"
+        /usr/bin/mwan3-flush-iface-conntrack "$INTERFACE" &
+        ;;
+esac
+
+exit 0

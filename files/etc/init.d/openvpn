@@ -9,11 +9,15 @@ start_instance() {
     local enabled config
 
     config_get_bool enabled "$section" enabled 1
-    [ "$enabled" = "1" ] || return 0
+
+    # Only enforce enabled when starting all instances at boot/service start.
+    if [ "$START_ALL" = "1" ]; then
+        [ "$enabled" = "1" ] || return 0
+    fi
 
     config_get config "$section" config
     [ -f "$config" ] || {
-        logger -t openvpn "Config not found: $config"
+        logger -t openvpn "Config not found for $section: $config"
         return 1
     }
 
@@ -27,5 +31,19 @@ start_instance() {
 
 start_service() {
     config_load openvpn
-    config_foreach start_instance openvpn
+
+    if [ -n "$1" ]; then
+        start_instance "$1"
+    else
+        START_ALL=1
+        config_foreach start_instance openvpn
+    fi
+}
+
+stop_service() {
+    if [ -n "$1" ]; then
+        procd_kill openvpn "$1"
+    else
+        procd_kill openvpn
+    fi
 }

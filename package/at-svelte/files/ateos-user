@@ -1,0 +1,141 @@
+#!/bin/sh
+
+# Manage ATEOS logins. Every user gets the same credentials for LuCI and the
+# at-svelte UI (rpcd login with password "$p$<user>", i.e. the system password).
+#
+#   ateos-user add <name> <password> [admin|user]
+#       admin - root rights, SSH login allowed (UID 0, shell /bin/ash)
+#       user  - web UIs only, no SSH login (shell /bin/false)  [default]
+#   ateos-user passwd <name> <password>
+#   ateos-user del <name>
+#   ateos-user list
+#
+# Only BusyBox tools are used (no shadow-utils needed).
+
+PASSWD=/etc/passwd
+SHADOW=/etc/shadow
+GROUP=/etc/group
+
+die() {
+	echo "ateos-user: $*" >&2
+	exit 1
+}
+
+valid_name() {
+	case "$1" in
+		root|''|[0-9-]*|*[!a-z0-9_-]*) return 1 ;;
+	esac
+	[ ${#1} -le 31 ]
+}
+
+user_exists() {
+	grep -q "^$1:" "$PASSWD"
+}
+
+next_uid() {
+	awk -F: 'BEGIN { m = 999 } $3 >= 1000 && $3 < 65534 && $3 > m { m = $3 } END { print m + 1 }' \
+		"$PASSWD" "$GROUP"
+}
+
+set_password() {
+	printf '%s\n%s\n' "$2" "$2" | passwd "$1" >/dev/null 2>&1 || die "failed to set password for $1"
+}
+
+rpcd_section() {
+	uci -q show rpcd | sed -n "s/^rpcd\.\([^.]*\)\.username='$1'$/\1/p" | head -n 1
+}
+
+rpcd_add() {
+	local sec
+
+	sec="$(rpcd_section "$1")"
+	[ -n "$sec" ] && uci delete "rpcd.$sec"
+
+	sec="$(uci add rpcd login)"
+	uci set "rpcd.$sec.username=$1"
+	uci set "rpcd.$sec.password=\$p\$$1"
+	uci add_list "rpcd.$sec.read=*"
+	uci add_list "rpcd.$sec.write=*"
+	uci commit rpcd
+	/etc/init.d/rpcd reload
+}
+
+rpcd_del() {
+	local sec
+
+	sec="$(rpcd_section "$1")"
+	[ -n "$sec" ] || return 0
+	uci delete "rpcd.$sec"
+	uci commit rpcd
+	/etc/init.d/rpcd reload
+}
+
+cmd_add() {
+	local name="$1" password="$2" role="${3:-user}" uid gid home shell
+
+	valid_name "$name" || die "invalid user name '$name' (a-z, 0-9, _ and -; not root)"
+	[ -n "$password" ] || die "password required"
+	user_exists "$name" && die "user '$name' already exists"
+
+	case "$role" in
+		admin)
+			uid=0; gid=0; home=/root; shell=/bin/ash
+			;;
+		user)
+			uid="$(next_uid)"; gid="$uid"; home=/var; shell=/bin/false
+			echo "$name:x:$gid:" >> "$GROUP"
+			;;
+		*)
+			die "role must be 'admin' or 'user'"
+			;;
+	esac
+
+	echo "$name:x:$uid:$gid:$name:$home:$shell" >> "$PASSWD"
+	echo "$name:*:0:0:99999:7:::" >> "$SHADOW"
+	set_password "$name" "$password"
+	rpcd_add "$name"
+
+	echo "added $role '$name'"
+}
+
+cmd_passwd() {
+	user_exists "$1" || die "no such user '$1'"
+	[ -n "$2" ] || die "password required"
+	set_password "$1" "$2"
+	echo "password changed for '$1'"
+}
+
+cmd_del() {
+	valid_name "$1" || die "refusing to delete '$1'"
+	user_exists "$1" || die "no such user '$1'"
+
+	sed -i "/^$1:/d" "$PASSWD" "$SHADOW"
+	sed -i "/^$1:x:[0-9]*:$/d" "$GROUP"
+	rpcd_del "$1"
+
+	echo "deleted '$1'"
+}
+
+cmd_list() {
+	local name uid shell role ui
+
+	echo "NAME             ROLE   SSH  WEB-UI"
+	while IFS=: read -r name _ uid _ _ _ shell; do
+		[ "$uid" = 0 ] || [ "$uid" -ge 1000 ] 2>/dev/null || continue
+		[ "$uid" = 0 ] && role=admin || role=user
+		case "$shell" in */false|*/nologin) ssh=no ;; *) ssh=yes ;; esac
+		[ -n "$(rpcd_section "$name")" ] && ui=yes || ui=no
+		printf '%-16s %-6s %-4s %s\n' "$name" "$role" "$ssh" "$ui"
+	done < "$PASSWD"
+}
+
+case "$1" in
+	add) shift; cmd_add "$@" ;;
+	passwd) shift; cmd_passwd "$@" ;;
+	del) shift; cmd_del "$@" ;;
+	list) cmd_list ;;
+	*)
+		sed -n '3,13s/^# \{0,1\}//p' "$0"
+		exit 1
+		;;
+esac

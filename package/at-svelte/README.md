@@ -49,6 +49,19 @@ On a device, `ubus -v list at-svelte` and `ubus call at-svelte status` test the
 backend directly. After changing the rpcd script or ACL, run
 `/etc/init.d/rpcd reload`.
 
+## Users (`ateos-user`)
+
+The package installs `/usr/sbin/ateos-user`. Each user gets one set of
+credentials for both LuCI and this UI (an rpcd login using the system
+password):
+
+```
+ateos-user add <name> <password> [admin|user]   # admin: root rights + SSH; user: web only, no SSH
+ateos-user passwd <name> <password>
+ateos-user del <name>
+ateos-user list
+```
+
 ## Developing the UI
 
 ```

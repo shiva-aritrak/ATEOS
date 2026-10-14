@@ -140,6 +140,15 @@ dd {
   overflow-wrap: anywhere;
 }
 
+footer {
+  max-width: 720px;
+  margin: 0 auto 24px;
+  padding: 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+
 .muted {
   color: var(--muted);
 }

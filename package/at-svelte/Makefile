@@ -1,7 +1,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=at-svelte
-PKG_VERSION:=0.1.0
+# Single source of truth for the version: ui/package.json
+PKG_VERSION:=$(shell sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' $(CURDIR)/ui/package.json)
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Aritrak Technologies
@@ -45,6 +46,8 @@ endef
 define Package/at-svelte/install
 	$(INSTALL_DIR) $(1)/www-at
 	$(CP) $(PKG_BUILD_DIR)/ui/dist/. $(1)/www-at/
+	$(INSTALL_DIR) $(1)/usr/share/at-svelte
+	echo "$(PKG_VERSION)-r$(PKG_RELEASE)" > $(1)/usr/share/at-svelte/version
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/at-svelte.uci-defaults $(1)/etc/uci-defaults/90-at-svelte-uhttpd
 	$(INSTALL_DIR) $(1)/usr/libexec/rpcd

@@ -54,7 +54,7 @@ backend directly. After changing the rpcd script or ACL, run
 ```
 cd package/at-svelte/ui
 npm install
-ROUTER=http://192.168.27.1 npm run dev
+ROUTER=http://192.168.1.1 npm run dev
 ```
 
 The dev server proxies `/ubus` to `ROUTER`, so the UI runs on your PC against

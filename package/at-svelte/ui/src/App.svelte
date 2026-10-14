@@ -100,9 +100,11 @@
       {#if error}<p class="error">{error}</p>{/if}
       {#if status}
         <dl>
+          <dt>Product</dt><dd>{status.product}</dd>
           <dt>Hostname</dt><dd>{status.hostname}</dd>
           <dt>Model</dt><dd>{status.model}</dd>
           <dt>Firmware</dt><dd>{status.firmware}</dd>
+          <dt>UI version</dt><dd>{status.ui_version}</dd>
           <dt>Uptime</dt><dd>{formatUptime(status.uptime)}</dd>
           <dt>Load</dt><dd>{status.load}</dd>
           <dt>LAN address</dt><dd>{status.lan_ip}</dd>
@@ -113,3 +115,5 @@
     </section>
   {/if}
 </main>
+
+<footer>ATEOS UI v{__APP_VERSION__}</footer>

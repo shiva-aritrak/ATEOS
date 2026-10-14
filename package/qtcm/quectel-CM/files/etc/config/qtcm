@@ -1,5 +1,6 @@
 config qtcm 'main'
 	option enabled '1'
+	option start_delay '35'
 	option log '1'
 	option log_file '/tmp/q-cm.log'
 	option usbmon_log_file ''

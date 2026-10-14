@@ -80,14 +80,4 @@
 	};
 };
 
-&ehci {
-	status = "disabled";
-};
-
-&ohci {
-	status = "disabled";
-};
-
-&usbphy {
-	status = "disabled";
-};
+/* USB host stays enabled on the ATEOS board: the cellular modem is on USB */

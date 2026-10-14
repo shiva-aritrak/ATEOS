@@ -70,7 +70,7 @@
 </script>
 
 <header>
-  <h1>ACE Router</h1>
+  <h1>ATEOS</h1>
   <nav>
     <a href={luciUrl}>Advanced settings (LuCI)</a>
     {#if loggedIn}

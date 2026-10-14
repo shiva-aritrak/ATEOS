@@ -1,6 +1,6 @@
 # at-svelte
 
-Svelte web UI for ACE routers, served on the default web ports. LuCI keeps
+Svelte web UI for ATEOS, served on the default web ports. LuCI keeps
 running alongside it on its own ports.
 
 | uhttpd instance | HTTP | HTTPS | Document root | Serves |

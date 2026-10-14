@@ -38,6 +38,20 @@
 	};
 };
 
+/*
+ * ATEOS MT7628 16MB board: bdinfo is blank, the MACs live in factory
+ * (0x04 WiFi, 0x28 LAN, 0x2e WAN) in the standard MT7628 layout.
+ */
+&ethernet {
+	nvmem-cells = <&macaddr_factory_28>;
+	nvmem-cell-names = "mac-address";
+};
+
+&wmac {
+	nvmem-cells = <&eeprom_factory_0>;
+	nvmem-cell-names = "eeprom";
+};
+
 &esw {
 	mediatek,portmap = <0x2f>;
 	mediatek,portdisable = <0x20>;

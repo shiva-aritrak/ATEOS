@@ -1,0 +1,11 @@
+{
+	"at-svelte": {
+		"description": "Access to the at-svelte web UI backend",
+		"read": {
+			"ubus": {
+				"at-svelte": [ "status" ],
+				"system": [ "board", "info" ]
+			}
+		}
+	}
+}

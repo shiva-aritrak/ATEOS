@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Backend for the at-svelte UI, exposed on ubus as "at-svelte".
+# Add methods to the "list" signature and handle them under "call".
+# Arguments arrive as JSON on stdin; reply with a JSON object on stdout.
+#
+#   ubus call at-svelte status
+
+. /usr/share/libubox/jshn.sh
+
+status() {
+	local up load1 load5 load15
+
+	read -r up _ < /proc/uptime
+	read -r load1 load5 load15 _ < /proc/loadavg
+	[ -f /etc/openwrt_release ] && . /etc/openwrt_release
+
+	json_init
+	json_add_string hostname "$(uci -q get system.@system[0].hostname)"
+	json_add_string model "$(cat /tmp/sysinfo/model 2>/dev/null)"
+	json_add_string firmware "$DISTRIB_DESCRIPTION"
+	json_add_int uptime "${up%.*}"
+	json_add_string load "$load1 $load5 $load15"
+	json_add_string lan_ip "$(uci -q get network.lan.ipaddr)"
+	json_dump
+}
+
+case "$1" in
+	list)
+		echo '{ "status": {} }'
+		;;
+	call)
+		case "$2" in
+			status) status ;;
+			*) exit 1 ;;
+		esac
+		;;
+esac

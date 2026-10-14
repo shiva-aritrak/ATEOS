@@ -17,7 +17,7 @@ config device
 config interface 'lan'
 	option device 'br-lan'
 	option proto 'static'
-	option ipaddr '192.168.26.1/24'
+	option ipaddr '192.168.27.1/24'
 	option ip6assign '60'
 
 # WAN MAC addresses are filled in per device from the factory partition

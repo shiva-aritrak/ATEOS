@@ -62,6 +62,15 @@ ateos-user del <name>
 ateos-user list
 ```
 
+Default logins on a fresh flash (`/etc/uci-defaults/91-ateos-users`); the
+script only sets a root password if none is set and only creates `admin` if it
+is missing, so a sysupgrade that keeps settings does not reset them:
+
+| User | Password | Access |
+|---|---|---|
+| `root` | `aritrak` | root, SSH, LuCI + ATEOS UI |
+| `admin` | `aritrak` | LuCI + ATEOS UI only, no SSH |
+
 ## Developing the UI
 
 ```

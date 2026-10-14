@@ -12,9 +12,11 @@
 #
 # Only BusyBox tools are used (no shadow-utils needed).
 
-PASSWD=/etc/passwd
-SHADOW=/etc/shadow
-GROUP=/etc/group
+# ATEOS_ROOT points at an alternative root (testing); ATEOS_NO_RELOAD=1 skips
+# the rpcd reload (first boot, before rpcd runs).
+PASSWD=${ATEOS_ROOT:-}/etc/passwd
+SHADOW=${ATEOS_ROOT:-}/etc/shadow
+GROUP=${ATEOS_ROOT:-}/etc/group
 
 die() {
 	echo "ateos-user: $*" >&2
@@ -57,7 +59,11 @@ rpcd_add() {
 	uci add_list "rpcd.$sec.read=*"
 	uci add_list "rpcd.$sec.write=*"
 	uci commit rpcd
-	/etc/init.d/rpcd reload
+	rpcd_reload
+}
+
+rpcd_reload() {
+	[ "$ATEOS_NO_RELOAD" = 1 ] || /etc/init.d/rpcd reload
 }
 
 rpcd_del() {
@@ -67,7 +73,7 @@ rpcd_del() {
 	[ -n "$sec" ] || return 0
 	uci delete "rpcd.$sec"
 	uci commit rpcd
-	/etc/init.d/rpcd reload
+	rpcd_reload
 }
 
 cmd_add() {
@@ -121,7 +127,7 @@ cmd_list() {
 
 	echo "NAME             ROLE   SSH  WEB-UI"
 	while IFS=: read -r name _ uid _ _ _ shell; do
-		[ "$uid" = 0 ] || [ "$uid" -ge 1000 ] 2>/dev/null || continue
+		[ "$uid" = 0 ] || { [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ]; } 2>/dev/null || continue
 		[ "$uid" = 0 ] && role=admin || role=user
 		case "$shell" in */false|*/nologin) ssh=no ;; *) ssh=yes ;; esac
 		[ -n "$(rpcd_section "$name")" ] && ui=yes || ui=no

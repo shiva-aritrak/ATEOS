@@ -50,6 +50,7 @@ define Package/at-svelte/install
 	echo "$(PKG_VERSION)-r$(PKG_RELEASE)" > $(1)/usr/share/at-svelte/version
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./files/at-svelte.uci-defaults $(1)/etc/uci-defaults/90-at-svelte-uhttpd
+	$(INSTALL_BIN) ./files/ateos-users.uci-defaults $(1)/etc/uci-defaults/91-ateos-users
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) ./files/ateos-user $(1)/usr/sbin/ateos-user
 	$(INSTALL_DIR) $(1)/usr/libexec/rpcd

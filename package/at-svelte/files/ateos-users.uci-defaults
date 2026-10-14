@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Default ATEOS logins on a fresh flash:
+#   root  / aritrak  - root, SSH allowed
+#   admin / aritrak  - LuCI + ATEOS UI only, no SSH
+# Runs after every flash/sysupgrade, so only set what is missing: a root
+# password that was changed on the device and an existing admin are kept.
+
+grep -q '^root::' /etc/shadow && \
+	printf 'aritrak\naritrak\n' | passwd root >/dev/null 2>&1
+
+grep -q '^admin:' /etc/passwd || \
+	ATEOS_NO_RELOAD=1 /usr/sbin/ateos-user add admin aritrak user >/dev/null
+
+exit 0
